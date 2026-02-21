@@ -1,0 +1,2177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI广告公司管理系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg: #f5f5f7;
+            --sidebar: #ffffff;
+            --card: #ffffff;
+            --text: #1d1d1f;
+            --text2: #86868b;
+            --accent: #0071e3;
+            --success: #34c759;
+            --warning: #ff9500;
+            --danger: #ff3b30;
+            --purple: #af52de;
+            --pink: #ff2d55;
+            --border: rgba(0,0,0,0.08);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        
+        /* 登录 */
+        .login-screen {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .login-screen h1 { font-size: 28px; font-weight: 600; }
+        .login-screen input {
+            width: 280px;
+            padding: 16px 20px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--card);
+            font-size: 16px;
+        }
+        .login-screen .btn {
+            width: 280px;
+            padding: 16px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        /* 主布局 */
+        .app-layout { display: none; min-height: 100vh; }
+        .app-layout.active { display: flex; }
+        
+        /* 侧边栏 */
+        .sidebar {
+            width: 180px;
+            background: var(--sidebar);
+            padding: 20px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border-right: 1px solid var(--border);
+        }
+        .sidebar-brand {
+            font-size: 18px;
+            font-weight: 700;
+            padding: 0 12px 20px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-item {
+            padding: 10px 14px;
+            border-radius: 8px;
+            color: var(--text2);
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.15s;
+        }
+        .nav-item:hover { background: var(--bg); color: var(--text); }
+        .nav-item.active { background: var(--accent); color: white; }
+        .nav-item.admin-only { margin-top: auto; border-top: 1px solid var(--border); padding-top: 12px; }
+        
+        /* 主内容 */
+        .main-content { flex: 1; padding: 20px 24px; overflow-y: auto; }
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header-bar h2 { font-size: 22px; font-weight: 600; }
+        .user-info { display: flex; align-items: center; gap: 16px; }
+        .points-badge {
+            padding: 6px 14px;
+            background: linear-gradient(135deg, var(--warning), #ff6b35);
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+        }
+        .user-info button {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        
+        /* 面板 */
+        .panel { display: none; }
+        .panel.active { display: block; }
+        
+        /* 打卡站 */
+        .checkin-layout {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 16px;
+            align-items: start;
+        }
+        
+        /* 左侧区域和月历对齐 */
+        .checkin-left {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        /* 月历 */
+        .calendar-section {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--border);
+        }
+        .cal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .cal-header h3 { font-size: 18px; font-weight: 600; }
+        .cal-nav { display: flex; gap: 8px; }
+        .cal-nav button {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--bg);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+        .weekday {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text2);
+            padding: 8px 0;
+            font-weight: 500;
+        }
+        .day {
+            width: 100%;
+            height: 95px;
+            min-height: 95px;
+            max-height: 95px;
+            border-radius: 8px;
+            padding: 5px;
+            background: #fafafa;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.15s;
+            border: 1px solid transparent;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        /* 未来的周六日 - 浅灰休息感 */
+        .day.weekend { background: #f0f0f2; }
+        /* 未来的节假日 - 浅灰+红边 */
+        .day.holiday { background: #f0f0f2; border: 1px solid rgba(255, 59, 48, 0.25); }
+        /* 过去的日子 - 弱化存在感，极淡的彩色 */
+        .day.past { 
+            background: #f5f5f7; 
+            opacity: 0.6;
+        }
+        .day.past .day-num { color: #999; }
+        /* 过去的周六日 - 淡蓝灰 */
+        .day.past.weekend { background: #e8eaed; }
+        /* 过去的节假日 - 淡暖灰 */
+        .day.past.holiday { background: #f0ebe8; border-color: rgba(255, 59, 48, 0.15); }
+        /* 今天 - 蓝色边框高亮 */
+        .day.today { 
+            background: #fafafa; 
+            border: 2px solid var(--accent); 
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.08);
+        }
+        .day.today.weekend { background: #f0f0f2; }
+        .day.today.holiday { background: #f0f0f2; }
+        .day:hover { border-color: var(--accent); background: #fff; }
+        .day-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 3px;
+            flex-shrink: 0;
+        }
+        .day-num { font-size: 11px; font-weight: 600; }
+        .day-checkin { font-size: 10px; color: var(--success); font-weight: 600; }
+        .day.today .day-checkin { color: rgba(255,255,255,0.9); }
+        .day-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow: hidden;
+        }
+        .day-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 10px;
+            padding: 2px 4px;
+            background: rgba(0, 113, 227, 0.1);
+            border-radius: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .day-item-dot { width: 3px; height: 3px; background: var(--accent); border-radius: 50%; flex-shrink: 0; }
+        .day-item-text { flex: 1; overflow: hidden; text-overflow: ellipsis; max-width: 55px; }
+        .day-item-check {
+            width: 10px; height: 10px;
+            border: 1px solid var(--accent);
+            border-radius: 2px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 7px;
+            color: white;
+            cursor: pointer;
+        }
+        .day-item-check.done { background: var(--accent); }
+        .day.today .day-item { background: rgba(0, 113, 227, 0.1); }
+        .day.today .day-item-dot { background: var(--accent); }
+        .day.today .day-item-check { border-color: var(--accent); }
+        .day-more { font-size: 10px; color: var(--text2); text-align: center; padding: 3px; flex-shrink: 0; }
+        
+        /* 右侧卡片 */
+        .right-section { display: flex; flex-direction: column; gap: 12px; }
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid var(--border);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .card-title { font-size: 14px; font-weight: 600; }
+        .card-btn {
+            padding: 4px 10px;
+            background: var(--bg);
+            border: none;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            color: var(--text2);
+        }
+        .card-btn:hover { background: var(--accent); color: white; }
+        
+        /* 打卡按钮 */
+        .checkin-btn {
+            width: 100%;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--success), #16a34a);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+            height: 40px;
+            line-height: 20px;
+        }
+        .checkin-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(52,199,94,0.3);
+        }
+        .checkin-btn:active {
+            transform: translateY(0);
+        }
+        .checkin-done {
+            text-align: center;
+            color: var(--success);
+            font-size: 15px;
+            font-weight: 600;
+            height: 40px;
+            line-height: 40px;
+        }
+        
+        /* 任务列表 */
+        .task-list { display: flex; flex-direction: column; gap: 8px; }
+        .task-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: var(--bg);
+            border-radius: 8px;
+            min-height: 44px;
+            height: 44px;
+        }
+        .task-text { font-size: 13px; flex: 1; }
+        .task-status {
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            min-width: 60px;
+            text-align: center;
+        }
+        .task-status.todo { background: var(--bg); color: var(--text2); border: 1px solid var(--border); }
+        .task-status.doing { background: rgba(0,113,227,0.15); color: var(--accent); }
+        .task-status.done { background: rgba(52,199,89,0.15); color: var(--success); }
+        
+        /* 挑战任务 */
+        .challenge-list { display: flex; flex-direction: column; gap: 10px; }
+        .challenge-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg);
+            border-radius: 8px;
+        }
+        .challenge-info { flex: 1; }
+        .challenge-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+        .challenge-meta { font-size: 11px; color: var(--text2); }
+        .challenge-points {
+            padding: 4px 10px;
+            background: linear-gradient(135deg, var(--warning), #ff6b35);
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+        .challenge-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+        .challenge-status.pending { background: #fff3e0; color: var(--warning); }
+        .challenge-status.doing { background: #e3f2fd; color: var(--accent); }
+        .challenge-status.done { background: #e8f5e9; color: var(--success); }
+        
+        /* 调休记录 */
+        .leave-record {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            background: var(--bg);
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+        .leave-days {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .leave-label { font-size: 12px; color: var(--text2); }
+        
+        /* 补卡链接 */
+        .makeup-link { text-align: center; padding: 16px; }
+        .makeup-link a { color: var(--text2); font-size: 13px; text-decoration: none; }
+        
+        /* 灵感墙 */
+        .ideas-layout { 
+            display: flex; 
+            gap: 16px; 
+            align-items: flex-start;
+        }
+        .idea-input-card {
+            width: 180px;
+            min-width: 180px;
+            height: 220px;
+            min-height: 220px;
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: sticky;
+            top: 0;
+        }
+        .idea-input-card textarea {
+            width: 100%;
+            flex: 1;
+            min-height: 140px;
+            padding: 10px;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 8px;
+            font-size: 13px;
+            resize: none;
+            font-family: inherit;
+            background: rgba(255,255,255,0.8);
+        }
+        .idea-input-card button {
+            padding: 10px;
+            background: var(--warning);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .ideas-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .ideas-tab {
+            padding: 8px 16px;
+            background: var(--bg);
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+        }
+        .ideas-tab.active { background: var(--accent); color: white; }
+        .ideas-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            flex: 1;
+        }
+        .idea-note {
+            width: 180px;
+            min-height: 220px;
+            height: 220px;
+            border-radius: 12px;
+            padding: 14px;
+            position: relative;
+            transform: rotate(-1deg);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .idea-note[data-color="0"] { transform: rotate(-1deg); background: linear-gradient(135deg, #fef3c7, #fde68a); }
+        .idea-note[data-color="1"] { transform: rotate(1deg); background: linear-gradient(135deg, #dbeafe, #bfdbfe); }
+        .idea-note[data-color="2"] { transform: rotate(0.5deg); background: linear-gradient(135deg, #fce7f3, #fbcfe8); }
+        .idea-note[data-color="3"] { transform: rotate(-0.5deg); background: linear-gradient(135deg, #d1fae5, #a7f3d0); }
+        .idea-note[data-color="4"] { transform: rotate(1.5deg); background: linear-gradient(135deg, #ede9fe, #ddd6fe); }
+        .idea-note[data-color="5"] { transform: rotate(-1.5deg); background: linear-gradient(135deg, #fee2e2, #fecaca); }
+        .idea-note.starred { order: -1; box-shadow: 0 4px 16px rgba(255,193,7,0.4); }
+        .idea-author {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .idea-time { font-size: 10px; }
+        .idea-content { font-size: 13px; line-height: 1.5; }
+        .idea-actions {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            display: flex;
+            gap: 6px;
+        }
+        .idea-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .idea-btn.star { background: rgba(255,255,255,0.8); }
+        .idea-btn.star.active { background: #ffc107; }
+        .idea-btn.delete { background: rgba(255,255,255,0.8); color: var(--danger); }
+        
+        /* 选题栏 */
+        .topic-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        .topic-card {
+            background: var(--card);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .topic-card:hover { transform: translateY(-4px); }
+        .topic-image {
+            width: 100%;
+            height: 200px;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+        .topic-content { padding: 16px; }
+        .topic-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .topic-desc {
+            font-size: 13px;
+            color: var(--text2);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .topic-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .topic-author { font-size: 12px; color: var(--text2); }
+        .topic-points { font-size: 12px; color: var(--success); font-weight: 600; }
+        
+        /* 积分中心 */
+        .achievements-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        .achievement-section {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--border);
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .section-title { font-size: 18px; font-weight: 600; }
+        .section-points { font-size: 14px; color: var(--accent); font-weight: 600; }
+        
+        /* Steam风格进度条 */
+        .steam-achievement {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: var(--bg);
+            border-radius: 12px;
+        }
+        .steam-achievement-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .steam-achievement-name { font-size: 15px; font-weight: 600; }
+        .steam-achievement-reward { font-size: 13px; color: var(--warning); font-weight: 600; }
+        .steam-progress-container {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        .steam-progress-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease, background 0.3s;
+        }
+        .steam-progress-bar.gray { background: linear-gradient(90deg, #9e9e9e, #bdbdbd); }
+        .steam-progress-bar.yellow { background: linear-gradient(90deg, #ffc107, #ff9800); }
+        .steam-progress-bar.green { background: linear-gradient(90deg, #4caf50, #8bc34a); }
+        .steam-progress-text {
+            font-size: 12px;
+            color: var(--text2);
+            margin-top: 6px;
+            text-align: right;
+        }
+        
+        /* 兑换中心 */
+        .shop-section {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--border);
+        }
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+        .shop-item {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .shop-item:hover { border-color: var(--accent); }
+        .shop-item-icon { font-size: 40px; margin-bottom: 12px; }
+        .shop-item-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .shop-item-price { font-size: 13px; color: var(--warning); margin-bottom: 12px; }
+        .shop-item-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .shop-item-btn:disabled { background: var(--bg); color: var(--text2); cursor: not-allowed; }
+        
+        /* 弹窗 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-box {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+        }
+        .modal-box h3 { font-size: 18px; margin-bottom: 20px; }
+        .modal-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .modal-row input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        .modal-row input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+            flex: 0 0 80px;
+        }
+        .modal-row input[type="number"]::-webkit-inner-spin-button,
+        .modal-row input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .plan-section { margin-bottom: 16px; }
+        .plan-label { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+        .plan-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 50px;
+            font-family: inherit;
+        }
+        .modal-btns {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .modal-btns button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .modal-btns .cancel { background: var(--bg); }
+        .modal-btns .submit { background: var(--accent); color: white; }
+        
+        /* 选题弹窗 - 小红书风格 */
+        .topic-modal-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .topic-image-upload {
+            aspect-ratio: 3/4;
+            background: var(--bg);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            border: 2px dashed var(--border);
+        }
+        .topic-image-upload:hover { border-color: var(--accent); }
+        .topic-form { display: flex; flex-direction: column; gap: 12px; }
+        .topic-form input, .topic-form textarea {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .topic-form textarea { flex: 1; min-height: 150px; resize: none; }
+        
+        /* 动画 */
+        @keyframes emojiPop {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 1; }
+            50% { transform: translate(calc(-50% + var(--tx) * 0.5), calc(-50% + var(--ty) * 0.5)) scale(1.2) rotate(180deg); opacity: 1; }
+            100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0) rotate(360deg); opacity: 0; }
+        }
+        @keyframes particlePop {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0); opacity: 0; }
+        }
+        
+        /* 今日打卡卡片固定高度 */
+        .leave-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+        .leave-tab { flex: 1; padding: 10px; background: var(--bg); border: none; border-radius: 8px; font-size: 13px; cursor: pointer; }
+        .leave-tab.active { background: var(--accent); color: white; }
+        .leave-history { max-height: 200px; overflow-y: auto; }
+        .leave-history-item { display: flex; justify-content: space-between; padding: 10px; background: var(--bg); border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
+
+        /* 弹窗事项列表 */
+        .modal-items {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+        }
+        .modal-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: var(--bg);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .modal-item:hover {
+            background: #f5f5f7;
+            border-color: var(--border);
+        }
+        .modal-item span {
+            flex: 1;
+            word-break: break-word;
+            line-height: 1.5;
+            padding-right: 16px;
+            color: var(--text);
+        }
+        .modal-item button {
+            padding: 6px 14px;
+            background: rgba(255, 59, 48, 0.08);
+            color: var(--danger);
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            font-weight: 500;
+        }
+        .modal-item button:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        @keyframes textPop {
+            0% { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.8); }
+            20% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.1); }
+            80% { opacity: 1; transform: translateX(-50%) translateY(-20px) scale(1); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-40px) scale(0.9); }
+        }
+        @keyframes pointsPop {
+            0% { opacity: 0; transform: translateX(-50%) scale(0.5); }
+            30% { opacity: 1; transform: translateX(-50%) scale(1.3); }
+            60% { opacity: 1; transform: translateX(-50%) scale(1.1) translateY(-30px); }
+            100% { opacity: 0; transform: translateX(-50%) scale(1) translateY(-60px); }
+        }
+        
+        /* 响应式 */
+        @media (max-width: 1024px) {
+            .checkin-layout { grid-template-columns: 1fr; }
+            .achievements-layout { grid-template-columns: 1fr; }
+            .ideas-layout { flex-direction: column; }
+            .idea-input-card { width: 100%; }
+        }
+        @media (max-width: 768px) {
+            .sidebar { width: 60px; padding: 16px 8px; }
+            .nav-item span { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录 -->
+    <div class="login-screen" id="login">
+        <h1>AI广告公司管理系统</h1>
+        <input type="text" id="loginName" placeholder="请输入姓名">
+        <button class="btn" onclick="doLogin()">进入系统</button>
+    </div>
+
+    <!-- 主应用 -->
+    <div class="app-layout" id="app">
+        <nav class="sidebar">
+            <div class="sidebar-brand">🚀 WorkOS</div>
+            <div class="nav-item active" onclick="switchPanel('checkin')" data-panel="checkin">
+                📍 <span>打卡站</span>
+            </div>
+            <div class="nav-item" onclick="switchPanel('ideas')" data-panel="ideas">
+                💡 <span>灵感墙</span>
+            </div>
+            <div class="nav-item" onclick="switchPanel('topics')" data-panel="topics">
+                📝 <span>选题栏</span>
+            </div>
+            <div class="nav-item" onclick="switchPanel('points')" data-panel="points">
+                🏆 <span>积分中心</span>
+            </div>
+            <div class="nav-item admin-only" onclick="switchPanel('admin')" data-panel="admin" id="adminNav" style="display:none;">
+                ⚙️ <span>管理</span>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <!-- 头部 -->
+            <div class="header-bar">
+                <h2 id="pageTitle">打卡站</h2>
+                <div class="user-info">
+                    <span id="userNameDisplay"></span>
+                    <span class="points-badge" id="userPoints">💰 0</span>
+                    <button onclick="logout()">退出</button>
+                </div>
+            </div>
+
+            <!-- 打卡站 -->
+            <div class="panel active" id="panel-checkin">
+                <div class="checkin-layout">
+                    <!-- 左侧月历 -->
+                    <div class="calendar-section">
+                        <div class="cal-header">
+                            <h3 id="calTitle">2026年2月</h3>
+                            <div class="cal-nav">
+                                <button onclick="changeMonth(-1)">‹</button>
+                                <button onclick="changeMonth(1)">›</button>
+                            </div>
+                        </div>
+                        <div class="calendar-grid" id="calGrid"></div>
+                    </div>
+                    
+                    <!-- 右侧 -->
+                    <div class="right-section">
+                        <!-- 第一行：今日打卡 + 调休天数 -->
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                            <!-- 今日打卡 -->
+                            <div class="card" style="display:flex;flex-direction:column;">
+                                <div class="card-title" style="margin-bottom:8px;height:20px;line-height:20px;">今日打卡</div>
+                                <div id="checkinBox" style="flex:1;display:flex;align-items:center;justify-content:center;"></div>
+                            </div>
+                            
+                            <!-- 调休天数 -->
+                            <div class="card" style="cursor:pointer;display:flex;flex-direction:column;" onclick="openLeaveModal()">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;height:20px;">
+                                    <div class="card-title">调休天数</div>
+                                    <button class="card-btn" style="padding:2px 8px;font-size:11px;" onclick="event.stopPropagation();openLeaveModal()">管理</button>
+                                </div>
+                                <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                                    <div style="font-size:28px;font-weight:700;color:var(--accent);line-height:1;"><span id="leaveDays">0</span></div>
+                                    <div style="font-size:11px;color:var(--text2);margin-top:2px;">天</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 本周计划 -->
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">本周计划</div>
+                                <button class="card-btn" onclick="openWeekPlanModal()">设置</button>
+                            </div>
+                            <div class="task-list" id="taskList"></div>
+                        </div>
+                        
+                        <!-- 创新任务 -->
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">创新任务</div>
+                                <button class="card-btn" onclick="openChallengeModal()">申报</button>
+                            </div>
+                            <div class="challenge-list" id="challengeList"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="makeup-link">
+                    <a href="#" onclick="openMakeupModal();return false;">申请补卡</a>
+                </div>
+            </div>
+
+            <!-- 灵感墙 -->
+            <div class="panel" id="panel-ideas">
+                <div class="ideas-tabs">
+                    <button class="ideas-tab active" onclick="switchIdeaTab('private')">私人</button>
+                    <button class="ideas-tab" onclick="switchIdeaTab('company')">公司</button>
+                </div>
+                <div class="ideas-layout">
+                    <div class="idea-input-card">
+                        <textarea id="ideaInput" placeholder="记录灵感..."></textarea>
+                        <button onclick="addIdea()">💡 贴上便利贴</button>
+                    </div>
+                    
+                    <div class="ideas-grid" id="ideasGrid"></div>
+                </div>
+            </div>
+
+            <!-- 选题栏 -->
+            <div class="panel" id="panel-topics">
+                <div class="card-header" style="margin-bottom:20px;">
+                    <div class="card-title">选题库</div>
+                    <button class="card-btn" onclick="openTopicModal()">+ 增加选题</button>
+                </div>
+                <div class="topic-list" id="topicList"></div>
+            </div>
+
+            <!-- 积分中心 -->
+            <div class="panel" id="panel-points">
+                <div class="achievements-layout">
+                    <!-- 左侧：每月成就 -->
+                    <div class="achievement-section">
+                        <div class="section-header">
+                            <div class="section-title">📅 每月成就</div>
+                            <div class="section-points">本月可获: 100分</div>
+                        </div>
+                        
+                        <div class="steam-achievement">
+                            <div class="steam-achievement-header">
+                                <div class="steam-achievement-name">🏃 月全勤</div>
+                                <div class="steam-achievement-reward">+30分</div>
+                            </div>
+                            <div class="steam-progress-container">
+                                <div class="steam-progress-bar gray" id="monthFullProgress" style="width:0%"></div>
+                            </div>
+                            <div class="steam-progress-text" id="monthFullText">0/22天</div>
+                        </div>
+                        
+                        <div class="steam-achievement">
+                            <div class="steam-achievement-header">
+                                <div class="steam-achievement-name">📋 三次周计划完成率100%</div>
+                                <div class="steam-achievement-reward">+70分</div>
+                            </div>
+                            <div class="steam-progress-container">
+                                <div class="steam-progress-bar gray" id="weekPlanProgress" style="width:0%"></div>
+                            </div>
+                            <div class="steam-progress-text" id="weekPlanText">0/3周</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧：终身成就 -->
+                    <div class="achievement-section">
+                        <div class="section-header">
+                            <div class="section-title">👑 终身成就</div>
+                        </div>
+                        
+                        <div class="steam-achievement">
+                            <div class="steam-achievement-header">
+                                <div class="steam-achievement-name">🚀 创新达人 I</div>
+                                <div class="steam-achievement-reward">+100分</div>
+                            </div>
+                            <div class="steam-progress-container">
+                                <div class="steam-progress-bar gray" id="innovationProgress1" style="width:0%"></div>
+                            </div>
+                            <div class="steam-progress-text" id="innovationText1">0/10个挑战</div>
+                        </div>
+                        
+                        <div class="steam-achievement">
+                            <div class="steam-achievement-header">
+                                <div class="steam-achievement-name">🚀 创新达人 II</div>
+                                <div class="steam-achievement-reward">+750分</div>
+                            </div>
+                            <div class="steam-progress-container">
+                                <div class="steam-progress-bar gray" id="innovationProgress2" style="width:0%"></div>
+                            </div>
+                            <div class="steam-progress-text" id="innovationText2">0/50个挑战</div>
+                        </div>
+                        
+                        <div class="steam-achievement">
+                            <div class="steam-achievement-header">
+                                <div class="steam-achievement-name">🚀 创新达人 III</div>
+                                <div class="steam-achievement-reward">+2000分</div>
+                            </div>
+                            <div class="steam-progress-container">
+                                <div class="steam-progress-bar gray" id="innovationProgress3" style="width:0%"></div>
+                            </div>
+                            <div class="steam-progress-text" id="innovationText3">0/100个挑战</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 兑换中心 -->
+                <div class="shop-section">
+                    <div class="section-title">🎁 兑换中心</div>
+                    
+                    <div class="shop-grid">
+                        <div class="shop-item">
+                            <div class="shop-item-icon">🏖️</div>
+                            <div class="shop-item-name">调休天数+1</div>
+                            <div class="shop-item-price">💰 300积分</div>
+                            <button class="shop-item-btn" onclick="exchangeItem('leave', 300)">兑换</button>
+                        </div>
+                        
+                        <div class="shop-item">
+                            <div class="shop-item-icon">🎁</div>
+                            <div class="shop-item-name">神秘许愿</div>
+                            <div class="shop-item-price">💰 600积分</div>
+                            <button class="shop-item-btn" onclick="exchangeItem('wish', 600)">兑换</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 弹窗们 -->
+    <div class="modal-overlay" id="weekPlanModal">
+        <div class="modal-box">
+            <h3>设置本周计划</h3>
+            <div id="weekPlanTasks"></div>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+                <input type="text" id="weekPlanInput" placeholder="添加任务..." style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;">
+                <button onclick="addWeekPlanTask()" style="padding:10px 16px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;">添加</button>
+            </div>
+            <div class="modal-btns">
+                <button class="cancel" onclick="closeWeekPlanModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="challengeModal">
+        <div class="modal-box">
+            <h3>创新任务申报</h3>
+            
+            <div class="modal-row">
+                <input type="text" id="chName" placeholder="项目名称">
+                <input type="number" id="chPoints" placeholder="积分" style="width:80px;">
+            </div>
+            
+            <div class="modal-row">
+                <select id="chDays" style="flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:14px;">
+                    <option value="">选择完成天数</option>
+                    <option value="1">1天</option>
+                    <option value="3">3天</option>
+                    <option value="7">7天</option>
+                    <option value="14">14天</option>
+                </select>
+            </div>
+            
+            <div class="plan-section"><div class="plan-label">1. 我要做什么：</div><textarea class="plan-input" id="chQ1"></textarea></div>
+            <div class="plan-section"><div class="plan-label">2. 解决什么问题：</div><textarea class="plan-input" id="chQ2"></textarea></div>
+            <div class="plan-section"><div class="plan-label">3. 怎么完成：</div><textarea class="plan-input" id="chQ3"></textarea></div>
+            <div class="plan-section"><div class="plan-label">4. 需要什么帮助：</div><textarea class="plan-input" id="chQ4"></textarea></div>
+            <div class="plan-section"><div class="plan-label">5. 怎么算完成：</div><textarea class="plan-input" id="chQ5"></textarea></div>
+            <div class="plan-section"><div class="plan-label">6. 备注：</div><textarea class="plan-input" id="chQ6"></textarea></div>
+            
+            <div class="modal-btns">
+                <button class="cancel" onclick="closeChallengeModal()">取消</button>
+                <button class="submit" onclick="submitChallenge()">提交申报</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="topicModal">
+        <div class="modal-box" style="max-width:700px;">
+            <h3>增加选题</h3>
+            
+            <div class="topic-modal-content">
+                <div class="topic-image-upload" onclick="document.getElementById('topicImage').click()">
+                    <div style="font-size:48px;">📷</div>
+                    <div style="font-size:14px;color:var(--text2);">点击上传图片</div>
+                    <input type="file" id="topicImage" accept="image/*" style="display:none;" onchange="previewTopicImage(this)">
+                </div>
+                
+                <div class="topic-form">
+                    <input type="text" id="topicTitle" placeholder="标题">
+                    <textarea id="topicDesc" placeholder="内容描述..."></textarea>
+                    <div style="font-size:12px;color:var(--text2);padding:8px;background:var(--bg);border-radius:8px;">
+                        💡 增加选题 +5积分 | 发布成功 +20积分
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-btns">
+                <button class="cancel" onclick="closeTopicModal()">取消</button>
+                <button class="submit" onclick="submitTopic()">提交 (+5积分)</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="dayModal">
+        <div class="modal-box">
+            <h3 id="dayModalTitle">编辑事项</h3>
+            <div class="modal-items" id="dayItems"></div>
+            <input type="text" id="newDayItem" placeholder="添加新事项" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:14px;">
+            
+            <div class="modal-btns">
+                <button class="cancel" onclick="closeDayModal()">关闭</button>
+                <button class="submit" onclick="addDayItem()">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 补卡弹窗 -->
+    <div class="modal-overlay" id="makeupModal">
+        <div class="modal-box">
+            <h3>申请补卡</h3>
+            <div class="modal-row">
+                <input type="date" id="makeupDate" placeholder="补卡日期">
+            </div>
+            <div class="modal-row">
+                <input type="text" id="makeupReason" placeholder="补卡原因">
+            </div>
+            <div class="modal-btns">
+                <button class="cancel" onclick="closeMakeupModal()">取消</button>
+                <button class="submit" onclick="submitMakeup()">提交申请</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 调休弹窗 -->
+    <div class="modal-overlay" id="leaveModal">
+        <div class="modal-box">
+            <h3>调休管理</h3>
+            
+            <div style="display:flex;gap:8px;margin-bottom:16px;">
+                <button class="card-btn" onclick="switchLeaveTab('use')" id="leaveTabUse">申请调休</button>
+                <button class="card-btn" onclick="switchLeaveTab('add')" id="leaveTabAdd">记录加班</button>
+                <button class="card-btn" onclick="switchLeaveTab('manage')" id="leaveTabManage">调休管理</button>
+                <button class="card-btn" onclick="switchLeaveTab('history')" id="leaveTabHistory">历史记录</button>
+            </div>
+            
+            <div id="leaveModalContent"></div>
+            
+            <div class="modal-btns">
+                <button class="cancel" onclick="closeLeaveModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 数据存储
+        let currentUser = null;
+        let isAdmin = false;
+        let currentMonth = new Date();
+        let selectedDate = null;
+        let points = 0;
+        let leaveDays = 0;
+        let leaveHistory = [];
+        let currentIdeaTab = 'private';
+        let currentLeaveTab = 'use';
+        let challengeDraft = { name: '', points: '', date: '', q1: '', q2: '', q3: '', q4: '', q5: '', q6: '' };
+
+        const data = {
+            checkins: {},
+            dayItems: {},
+            weekTasks: [],
+            challenges: [],
+            ideas: { private: [], company: [] },
+            topics: [],
+            achievements: {
+                monthFull: { current: 0, target: 0, reward: 30, cycle: '按实际上班天数' },
+                weekPlan: { current: 0, target: 3, reward: 70 },
+                innovation1: { current: 0, target: 10, reward: 100 },
+                innovation2: { current: 0, target: 50, reward: 750 },
+                innovation3: { current: 0, target: 100, reward: 2000 }
+            }
+        };
+
+        // 用户颜色映射
+        const userColors = ['#fef3c7', '#dbeafe', '#fce7f3', '#d1fae5', '#ede9fe', '#fee2e2'];
+        const userColorMap = {};
+
+        const userColorIndexMap = {};
+        
+        function getUserColorIndex(name) {
+            if (userColorIndexMap[name] === undefined) {
+                userColorIndexMap[name] = Object.keys(userColorIndexMap).length % 6;
+            }
+            return userColorIndexMap[name];
+        }
+
+        function getUserColor(name) {
+            const colors = ['#fef3c7', '#dbeafe', '#fce7f3', '#d1fae5', '#ede9fe', '#fee2e2'];
+            return colors[getUserColorIndex(name)];
+        }
+
+        function doLogin() {
+            const name = document.getElementById('loginName').value.trim();
+            if (!name) return alert('请输入姓名');
+            currentUser = name;
+            isAdmin = name === 'admin';
+            document.getElementById('login').style.display = 'none';
+            document.getElementById('app').classList.add('active');
+            document.getElementById('userNameDisplay').textContent = name;
+            document.getElementById('adminNav').style.display = isAdmin ? 'flex' : 'none';
+            initApp();
+        }
+
+        function logout() {
+            currentUser = null;
+            isAdmin = false;
+            document.getElementById('login').style.display = 'flex';
+            document.getElementById('app').classList.remove('active');
+        }
+
+        function getHolidayName(dateStr) {
+            const holidays = {
+                '2025-01-01': '元旦',
+                '2025-01-28': '春节', '2025-01-29': '春节', '2025-01-30': '春节', '2025-01-31': '春节',
+                '2025-02-01': '春节', '2025-02-02': '春节', '2025-02-03': '春节',
+                '2025-04-04': '清明', '2025-04-05': '清明', '2025-04-06': '清明',
+                '2025-05-01': '劳动', '2025-05-02': '劳动', '2025-05-03': '劳动', '2025-05-04': '劳动', '2025-05-05': '劳动',
+                '2025-05-31': '端午', '2025-06-01': '端午', '2025-06-02': '端午',
+                '2025-10-01': '国庆', '2025-10-02': '国庆', '2025-10-03': '国庆', '2025-10-04': '国庆',
+                '2025-10-05': '国庆', '2025-10-06': '国庆', '2025-10-07': '国庆', '2025-10-08': '国庆',
+                '2026-01-01': '元旦',
+                '2026-02-17': '春节', '2026-02-18': '春节', '2026-02-19': '春节', '2026-02-20': '春节',
+                '2026-02-21': '春节', '2026-02-22': '春节', '2026-02-23': '春节',
+                '2026-04-04': '清明', '2026-04-05': '清明', '2026-04-06': '清明',
+                '2026-05-01': '劳动', '2026-05-02': '劳动', '2026-05-03': '劳动', '2026-05-04': '劳动', '2026-05-05': '劳动',
+                '2026-06-19': '端午', '2026-06-20': '端午', '2026-06-21': '端午',
+                '2026-10-01': '国庆', '2026-10-02': '国庆', '2026-10-03': '国庆', '2026-10-04': '国庆',
+                '2026-10-05': '国庆', '2026-10-06': '国庆', '2026-10-07': '国庆', '2026-10-08': '国庆'
+            };
+            return holidays[dateStr] || null;
+        }
+
+        function getWorkDaysInMonth(year, month) {
+            const holidays = getHolidays(year);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            let workDays = 0;
+            
+            for (let d = 1; d <= daysInMonth; d++) {
+                const date = new Date(year, month, d);
+                const dayOfWeek = date.getDay();
+                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const isHoliday = holidays.includes(dateStr);
+                
+                if (!isWeekend && !isHoliday) {
+                    workDays++;
+                }
+            }
+            return workDays;
+        }
+
+        function initApp() {
+            // 计算当月上班天数作为月全勤目标
+            const now = new Date();
+            data.achievements.monthFull.target = getWorkDaysInMonth(now.getFullYear(), now.getMonth());
+            
+            renderCalendar();
+            renderCheckin();
+            renderWeekTasks();
+            renderChallenges();
+            renderIdeas();
+            renderTopics();
+            renderAchievements();
+            updatePoints();
+        }
+
+        function switchPanel(panel) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelector(`[data-panel="${panel}"]`).classList.add('active');
+            document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+            document.getElementById(`panel-${panel}`).classList.add('active');
+            const titles = { checkin: '打卡站', ideas: '灵感墙', topics: '选题栏', points: '积分中心', admin: '管理' };
+            document.getElementById('pageTitle').textContent = titles[panel];
+        }
+
+        function getHolidays(year) {
+            // 2025-2026 主要节假日
+            const holidays = {
+                2025: ['2025-01-01', '2025-01-28', '2025-01-29', '2025-01-30', '2025-01-31', '2025-02-01', '2025-02-02', '2025-02-03', '2025-04-04', '2025-04-05', '2025-04-06', '2025-05-01', '2025-05-02', '2025-05-03', '2025-05-04', '2025-05-05', '2025-05-31', '2025-06-01', '2025-06-02', '2025-10-01', '2025-10-02', '2025-10-03', '2025-10-04', '2025-10-05', '2025-10-06', '2025-10-07', '2025-10-08'],
+                2026: ['2026-01-01', '2026-02-17', '2026-02-18', '2026-02-19', '2026-02-20', '2026-02-21', '2026-02-22', '2026-02-23', '2026-04-04', '2026-04-05', '2026-04-06', '2026-05-01', '2026-05-02', '2026-05-03', '2026-05-04', '2026-05-05', '2026-06-19', '2026-06-20', '2026-06-21', '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05', '2026-10-06', '2026-10-07', '2026-10-08']
+            };
+            return holidays[year] || [];
+        }
+
+        // 月历
+        function renderCalendar() {
+            const y = currentMonth.getFullYear();
+            const m = currentMonth.getMonth();
+            document.getElementById('calTitle').textContent = `${y}年${m+1}月`;
+            const first = new Date(y, m, 1).getDay();
+            const days = new Date(y, m+1, 0).getDate();
+            const grid = document.getElementById('calGrid');
+            grid.innerHTML = '';
+            
+            const weekdays = '一二三四五六日'.split('');
+            weekdays.forEach((d, idx) => {
+                const el = document.createElement('div');
+                el.className = 'weekday' + (idx >= 5 ? ' weekend' : '');
+                el.textContent = d;
+                grid.appendChild(el);
+            });
+            
+            const firstDayOfWeek = first === 0 ? 6 : first - 1;
+            for (let i = 0; i < firstDayOfWeek; i++) {
+                grid.appendChild(document.createElement('div'));
+            }
+            
+            const today = new Date().toISOString().split('T')[0];
+            const holidays = getHolidays(y);
+            
+            for (let d = 1; d <= days; d++) {
+                const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const isToday = ds === today;
+                const isPast = ds < today;
+                const hasCheckin = data.checkins[ds];
+                const items = data.dayItems[ds] || [];
+                const dayOfWeek = (firstDayOfWeek + d - 1) % 7;
+                const isWeekend = dayOfWeek >= 5;
+                const isHoliday = holidays.includes(ds);
+                const holidayName = getHolidayName(ds);
+                
+                const el = document.createElement('div');
+                el.className = 'day' + (isToday ? ' today' : '') + (isPast ? ' past' : '') + (isWeekend ? ' weekend' : '') + (isHoliday ? ' holiday' : '');
+                el.onclick = () => openDayModal(ds);
+                
+                let itemsHtml = '';
+                items.slice(0, 3).forEach((item, idx) => {
+                    const isDone = item.startsWith('✓ ');
+                    const text = isDone ? item.slice(2) : item;
+                    itemsHtml += `
+                        <div class="day-item">
+                            <div class="day-item-dot"></div>
+                            <div class="day-item-text" style="${isDone?'text-decoration:line-through;opacity:0.6':''}">${text}</div>
+                            <div class="day-item-check ${isDone?'done':''}" onclick="event.stopPropagation(); toggleDayItem('${ds}', ${idx})">${isDone?'✓':''}</div>
+                        </div>
+                    `;
+                });
+                
+                const moreHtml = items.length > 3 ? `<div class="day-more">+${items.length-3}</div>` : '';
+                const checkinHtml = hasCheckin ? '<span class="day-checkin">✓</span>' : '';
+                const holidayHtml = holidayName ? `<span style="font-size:9px;color:var(--text2);margin-left:2px;">(${holidayName})</span>` : '';
+                
+                el.innerHTML = `
+                    <div class="day-header"><div class="day-num">${d}${holidayHtml}</div>${checkinHtml}</div>
+                    <div class="day-content">${itemsHtml}${moreHtml}</div>
+                `;
+                grid.appendChild(el);
+            }
+            
+            const totalCells = 35;
+            const filled = firstDayOfWeek + days;
+            for (let i = 0; i < totalCells - filled; i++) {
+                grid.appendChild(document.createElement('div'));
+            }
+        }
+
+        function changeMonth(d) {
+            currentMonth.setMonth(currentMonth.getMonth() + d);
+            renderCalendar();
+        }
+
+        function openDayModal(date) {
+            selectedDate = date;
+            document.getElementById('dayModalTitle').textContent = date + ' 的事项';
+            renderDayItems();
+            document.getElementById('dayModal').classList.add('active');
+        }
+
+        function closeDayModal() {
+            document.getElementById('dayModal').classList.remove('active');
+            selectedDate = null;
+        }
+
+        function renderDayItems() {
+            const items = data.dayItems[selectedDate] || [];
+            const container = document.getElementById('dayItems');
+            if (items.length === 0) {
+                container.innerHTML = '<div style="color:var(--text2);padding:20px;text-align:center;font-size:14px;">暂无事项</div>';
+            } else {
+                container.innerHTML = items.map((item, i) => {
+                    const isDone = item.startsWith('✓ ');
+                    const text = isDone ? item.slice(2) : item;
+                    return `
+                        <div class="modal-item" style="${isDone ? 'opacity:0.6;background:#f0f0f2;' : ''}">
+                            <span style="${isDone ? 'text-decoration:line-through;' : ''}">${text}</span>
+                            <button onclick="deleteDayItem(${i})" style="${isDone ? 'opacity:0.6;' : ''}">删除</button>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function addDayItem() {
+            const input = document.getElementById('newDayItem');
+            const text = input.value.trim();
+            if (!text || !selectedDate) return;
+            if (!data.dayItems[selectedDate]) data.dayItems[selectedDate] = [];
+            data.dayItems[selectedDate].push(text);
+            input.value = '';
+            renderDayItems();
+            renderCalendar();
+        }
+
+        function deleteDayItem(idx) {
+            if (!selectedDate) return;
+            data.dayItems[selectedDate].splice(idx, 1);
+            renderDayItems();
+            renderCalendar();
+        }
+
+        function toggleDayItem(date, idx) {
+            if (!data.dayItems[date]) return;
+            const item = data.dayItems[date][idx];
+            data.dayItems[date][idx] = item.startsWith('✓ ') ? item.slice(2) : '✓ ' + item;
+            renderCalendar();
+        }
+
+        // 打卡
+        // 鼓励语（30句）
+        const encouragements = [
+            '又是赚钱的一天！',
+            '早起打卡，财富+1',
+            '今天的你超棒！',
+            '打卡成功，运气爆棚',
+            '新的一天，新的收获',
+            '坚持就是胜利',
+            '今日份努力已到账',
+            '早起的人先赚钱',
+            '打卡打卡，钱包鼓鼓',
+            '又是元气满满的一天',
+            '你的努力值得被看见',
+            '今日打卡，明日暴富',
+            '坚持打卡，奖金在望',
+            '早起打卡，领先一步',
+            '今天的你闪闪发光',
+            '打卡成功，继续加油',
+            '每一分钱都值得',
+            '你的努力有回报',
+            '新的一天，新的机会',
+            '打卡完成，心情美丽',
+            '早起的人最幸运',
+            '今日份自律已达成',
+            '你正在变得更好',
+            '打卡成功，能量满满',
+            '今天的你很有钱途',
+            '坚持打卡，未来可期',
+            '早起打卡，效率翻倍',
+            '你的努力不会白费',
+            '又是收获满满的一天',
+            '新的一天，新的开始'
+        ];
+
+        // 钱相关emoji
+        const moneyEmojis = ['💰', '💵', '💸', '🪙', '💎', '✨', '🌟', '🔥', '💪', '👏', '🎉', '🎊'];
+
+        function renderCheckin() {
+            const today = new Date().toISOString().split('T')[0];
+            const box = document.getElementById('checkinBox');
+            if (data.checkins[today]) {
+                box.innerHTML = '<div class="checkin-done">打卡成功 ✓</div>';
+            } else {
+                box.innerHTML = '<button class="checkin-btn" onclick="doCheckin()">立即打卡</button>';
+            }
+        }
+
+        function doCheckin() {
+            const today = new Date().toISOString().split('T')[0];
+            
+            // 先获取按钮位置并显示动画
+            const btn = document.querySelector('.checkin-btn');
+            if (btn) {
+                const rect = btn.getBoundingClientRect();
+                showCheckinRewardAt(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            }
+            
+            data.checkins[today] = true;
+            points += 2;
+            updatePoints();
+            renderCheckin();
+            updateAchievementProgress('monthFull', Object.keys(data.checkins).length);
+        }
+
+        function showCheckinRewardAt(centerX, centerY) {
+            // 随机鼓励语
+            const text = encouragements[Math.floor(Math.random() * encouragements.length)];
+            
+            // 显示鼓励语
+            const textEl = document.createElement('div');
+            textEl.textContent = text;
+            textEl.style.cssText = `
+                position: fixed;
+                left: ${centerX}px;
+                top: ${centerY - 50}px;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, #ffc107, #ff9800);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: 600;
+                z-index: 10000;
+                pointer-events: none;
+                animation: textPop 1.5s ease-out forwards;
+            `;
+            document.body.appendChild(textEl);
+            setTimeout(() => textEl.remove(), 1500);
+            
+            // 显示 +2分
+            const pointsEl = document.createElement('div');
+            pointsEl.textContent = '+2分';
+            pointsEl.style.cssText = `
+                position: fixed;
+                left: ${centerX}px;
+                top: ${centerY - 20}px;
+                transform: translateX(-50%);
+                color: var(--success);
+                font-size: 28px;
+                font-weight: 800;
+                z-index: 10001;
+                pointer-events: none;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                animation: pointsPop 1.2s ease-out forwards;
+            `;
+            document.body.appendChild(pointsEl);
+            setTimeout(() => pointsEl.remove(), 1200);
+            
+            // 发射钱emoji
+            for (let i = 0; i < 12; i++) {
+                setTimeout(() => {
+                    const emoji = moneyEmojis[Math.floor(Math.random() * moneyEmojis.length)];
+                    const el = document.createElement('div');
+                    el.textContent = emoji;
+                    el.style.cssText = `
+                        position: fixed;
+                        left: ${centerX}px;
+                        top: ${centerY}px;
+                        font-size: 24px;
+                        pointer-events: none;
+                        z-index: 9999;
+                        transform: translate(-50%, -50%);
+                    `;
+                    
+                    const angle = (Math.PI * 2 * i) / 12 + (Math.random() - 0.5) * 0.5;
+                    const distance = 80 + Math.random() * 40;
+                    const tx = Math.cos(angle) * distance;
+                    const ty = Math.sin(angle) * distance - 50;
+                    
+                    el.style.setProperty('--tx', tx + 'px');
+                    el.style.setProperty('--ty', ty + 'px');
+                    el.style.animation = 'emojiPop 1s ease-out forwards';
+                    
+                    document.body.appendChild(el);
+                    setTimeout(() => el.remove(), 1000);
+                }, i * 50);
+            }
+        }
+
+        // 调休
+        function addLeaveDay() {
+            leaveDays++;
+            document.getElementById('leaveDays').textContent = leaveDays;
+            alert('已记录周六日加班，调休+1天');
+        }
+
+        // 本周计划
+        function openWeekPlanModal() {
+            renderWeekPlanTasks();
+            document.getElementById('weekPlanModal').classList.add('active');
+        }
+
+        function closeWeekPlanModal() {
+            document.getElementById('weekPlanModal').classList.remove('active');
+        }
+
+        function renderWeekPlanTasks() {
+            const container = document.getElementById('weekPlanTasks');
+            if (data.weekTasks.length === 0) {
+                container.innerHTML = '<div style="color:var(--text2);padding:10px;">暂无任务</div>';
+            } else {
+                container.innerHTML = data.weekTasks.map((t, i) => `
+                    <div class="modal-item"><span>${t.text}</span><button onclick="deleteWeekTask(${i})">删除</button></div>
+                `).join('');
+            }
+        }
+
+        function addWeekPlanTask() {
+            const input = document.getElementById('weekPlanInput');
+            const text = input.value.trim();
+            if (!text) return;
+            data.weekTasks.push({ text, status: 'todo' });
+            input.value = '';
+            renderWeekPlanTasks();
+            renderWeekTasks();
+        }
+
+        function deleteWeekTask(idx) {
+            data.weekTasks.splice(idx, 1);
+            renderWeekPlanTasks();
+            renderWeekTasks();
+        }
+
+        function renderWeekTasks() {
+            const list = document.getElementById('taskList');
+            if (data.weekTasks.length === 0) {
+                list.innerHTML = '<div style="color:var(--text2);font-size:12px;padding:10px 0;">暂无任务，点击右上角设置</div>';
+            } else {
+                list.innerHTML = data.weekTasks.map((t, i) => {
+                    const statusClass = t.status;
+                    const statusText = t.status === 'todo' ? '未开始' : t.status === 'doing' ? '进行中' : '已完成';
+                    return `
+                        <div class="task-item">
+                            <div class="task-text">${t.text}</div>
+                            <button class="task-status ${statusClass}" onclick="toggleTaskStatus(${i})">${statusText}</button>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function toggleTaskStatus(idx) {
+            const status = data.weekTasks[idx].status;
+            if (status === 'todo') data.weekTasks[idx].status = 'doing';
+            else if (status === 'doing') {
+                data.weekTasks[idx].status = 'done';
+                const btn = event.target;
+                const rect = btn.getBoundingClientRect();
+                showFireworks(rect.left + rect.width/2, rect.top + rect.height/2);
+            }
+            else data.weekTasks[idx].status = 'todo';
+            renderWeekTasks();
+        }
+
+        function showFireworks(x, y) {
+            const emojis = ['🎉', '✨', '🌟', '💫', '🎊', '🔥', '💪', '👏'];
+            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#fd79a8'];
+            
+            for (let i = 0; i < 4; i++) {
+                setTimeout(() => {
+                    const el = document.createElement('div');
+                    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                    el.style.cssText = `position:fixed;left:${x}px;top:${y}px;font-size:24px;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);`;
+                    const angle = (Math.PI * 2 * i) / 4 + (Math.random() - 0.5);
+                    const dist = 60 + Math.random() * 40;
+                    el.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+                    el.style.setProperty('--ty', Math.sin(angle) * dist - 30 + 'px');
+                    el.style.animation = 'emojiPop 0.8s ease-out forwards';
+                    document.body.appendChild(el);
+                    setTimeout(() => el.remove(), 800);
+                }, i * 80);
+            }
+            
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => {
+                    const el = document.createElement('div');
+                    el.style.cssText = `position:fixed;left:${x}px;top:${y}px;width:6px;height:6px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:50%;pointer-events:none;z-index:9998;`;
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 40 + Math.random() * 50;
+                    el.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+                    el.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+                    el.style.animation = 'particlePop 0.6s ease-out forwards';
+                    document.body.appendChild(el);
+                    setTimeout(() => el.remove(), 600);
+                }, i * 20);
+            }
+        }
+
+        // 挑战任务
+        function openChallengeModal() {
+            document.getElementById('chName').value = challengeDraft.name;
+            document.getElementById('chPoints').value = challengeDraft.points;
+            document.getElementById('chDate').value = challengeDraft.date;
+            document.getElementById('chQ1').value = challengeDraft.q1;
+            document.getElementById('chQ2').value = challengeDraft.q2;
+            document.getElementById('chQ3').value = challengeDraft.q3;
+            document.getElementById('chQ4').value = challengeDraft.q4;
+            document.getElementById('chQ5').value = challengeDraft.q5;
+            document.getElementById('chQ6').value = challengeDraft.q6;
+            document.getElementById('challengeModal').classList.add('active');
+        }
+
+        function closeChallengeModal() {
+            challengeDraft = {
+                name: document.getElementById('chName').value,
+                points: document.getElementById('chPoints').value,
+                days: document.getElementById('chDays').value,
+                q1: document.getElementById('chQ1').value,
+                q2: document.getElementById('chQ2').value,
+                q3: document.getElementById('chQ3').value,
+                q4: document.getElementById('chQ4').value,
+                q5: document.getElementById('chQ5').value,
+                q6: document.getElementById('chQ6').value
+            };
+            document.getElementById('challengeModal').classList.remove('active');
+        }
+
+        function openChallengeModal() {
+            document.getElementById('challengeModal').classList.add('active');
+            if (challengeDraft.name) {
+                document.getElementById('chName').value = challengeDraft.name;
+                document.getElementById('chPoints').value = challengeDraft.points;
+                document.getElementById('chDays').value = challengeDraft.days || '';
+                document.getElementById('chQ1').value = challengeDraft.q1;
+                document.getElementById('chQ2').value = challengeDraft.q2;
+                document.getElementById('chQ3').value = challengeDraft.q3;
+                document.getElementById('chQ4').value = challengeDraft.q4;
+                document.getElementById('chQ5').value = challengeDraft.q5;
+                document.getElementById('chQ6').value = challengeDraft.q6;
+            }
+        }
+
+        function submitChallenge() {
+            const name = document.getElementById('chName').value.trim();
+            const pointsVal = document.getElementById('chPoints').value;
+            const days = document.getElementById('chDays').value;
+            if (!name || !pointsVal || !days) return alert('请填写完整信息');
+            
+            // 计算截止日期
+            const deadline = new Date();
+            deadline.setDate(deadline.getDate() + parseInt(days));
+            const dateStr = `${deadline.getMonth()+1}/${deadline.getDate()}`;
+            
+            data.challenges.push({ id: Date.now(), name, points: parseInt(pointsVal), days: parseInt(days), deadline: dateStr, status: 'pending' });
+            challengeDraft = { name: '', points: '', days: '', q1: '', q2: '', q3: '', q4: '', q5: '', q6: '' };
+            ['chName', 'chPoints', 'chDays', 'chQ1', 'chQ2', 'chQ3', 'chQ4', 'chQ5', 'chQ6'].forEach(id => document.getElementById(id).value = '');
+            closeChallengeModal();
+            renderChallenges();
+            alert('申报已提交');
+        }
+
+        function renderChallenges() {
+            const list = document.getElementById('challengeList');
+            if (data.challenges.length === 0) {
+                list.innerHTML = '<div style="color:var(--text2);font-size:12px;padding:10px 0;">暂无挑战任务</div>';
+            } else {
+                list.innerHTML = data.challenges.map(c => {
+                    const statusClass = c.status;
+                    const statusText = c.status === 'pending' ? '申报中' : c.status === 'doing' ? '进行中' : '已完成';
+                    return `
+                        <div class="challenge-item">
+                            <div class="challenge-info"><div class="challenge-name">${c.name}</div><div class="challenge-meta">${c.deadline}截止</div></div>
+                            <div class="challenge-points">${c.points}分</div>
+                            <div class="challenge-status ${statusClass}">${statusText}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // 灵感墙
+        function switchIdeaTab(tab) {
+            currentIdeaTab = tab;
+            document.querySelectorAll('.ideas-tab').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+            renderIdeas();
+        }
+
+        function renderIdeas() {
+            const grid = document.getElementById('ideasGrid');
+            const ideas = data.ideas[currentIdeaTab] || [];
+            
+            if (ideas.length === 0) {
+                grid.innerHTML = '<div style="color:var(--text2);padding:40px;">还没有便利贴</div>';
+                return;
+            }
+            
+            grid.innerHTML = ideas.slice().reverse().map((idea, idx) => {
+                const isStarred = idea.starred;
+                // 使用保存的颜色索引，如果没有则根据作者分配
+                if (idea.colorIndex === undefined) {
+                    idea.colorIndex = getUserColorIndex(idea.author);
+                }
+                const colorIndex = idea.colorIndex;
+                
+                return `
+                    <div class="idea-note ${isStarred?'starred':''}" data-color="${colorIndex}">
+                        <div class="idea-author">
+                            <span>${currentIdeaTab==='company'?idea.author:'我'}</span>
+                            <span class="idea-time">${idea.time}</span>
+                        </div>
+                        <div class="idea-content">${idea.content}</div>
+                        <div class="idea-actions">
+                            <button class="idea-btn star ${isStarred?'active':''}" onclick="toggleStar(${ideas.length-1-idx})">⭐</button>
+                            <button class="idea-btn delete" onclick="deleteIdea(${ideas.length-1-idx})">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function addIdea() {
+            const content = document.getElementById('ideaInput').value.trim();
+            if (!content) return;
+            
+            const now = new Date();
+            const time = `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            
+            // 确保颜色索引被正确设置
+            const colorIdx = getUserColorIndex(currentUser);
+            console.log('Adding idea with color index:', colorIdx, 'for user:', currentUser);
+            
+            data.ideas[currentIdeaTab].push({
+                content,
+                author: currentUser,
+                time,
+                starred: false,
+                colorIndex: colorIdx
+            });
+            
+            document.getElementById('ideaInput').value = '';
+            renderIdeas();
+        }
+
+        function toggleStar(idx) {
+            data.ideas[currentIdeaTab][idx].starred = !data.ideas[currentIdeaTab][idx].starred;
+            renderIdeas();
+        }
+
+        function deleteIdea(idx) {
+            data.ideas[currentIdeaTab].splice(idx, 1);
+            renderIdeas();
+        }
+
+        // 选题栏
+        function openTopicModal() {
+            document.getElementById('topicModal').classList.add('active');
+        }
+
+        function closeTopicModal() {
+            document.getElementById('topicModal').classList.remove('active');
+        }
+
+        function previewTopicImage(input) {
+            if (input.files && input.files[0]) {
+                // 预览逻辑
+            }
+        }
+
+        function submitTopic() {
+            const title = document.getElementById('topicTitle').value.trim();
+            const desc = document.getElementById('topicDesc').value.trim();
+            if (!title || !desc) return alert('请填写标题和内容');
+            
+            data.topics.push({
+                id: Date.now(),
+                title,
+                desc,
+                author: currentUser,
+                points: 5,
+                status: 'pending'
+            });
+            
+            points += 5;
+            updatePoints();
+            
+            document.getElementById('topicTitle').value = '';
+            document.getElementById('topicDesc').value = '';
+            closeTopicModal();
+            renderTopics();
+            alert('选题已提交，+5积分');
+        }
+
+        function renderTopics() {
+            const list = document.getElementById('topicList');
+            if (data.topics.length === 0) {
+                list.innerHTML = '<div style="color:var(--text2);text-align:center;padding:40px;">暂无选题</div>';
+            } else {
+                list.innerHTML = data.topics.slice().reverse().map(t => `
+                    <div class="topic-card">
+                        <div class="topic-image">📷</div>
+                        <div class="topic-content">
+                            <div class="topic-title">${t.title}</div>
+                            <div class="topic-desc">${t.desc}</div>
+                            <div class="topic-meta">
+                                <span class="topic-author">${t.author}</span>
+                                <span class="topic-points">+${t.points}分</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // 积分中心
+        function renderAchievements() {
+            // 更新月全勤目标（动态计算当月上班天数）
+            const now = new Date();
+            data.achievements.monthFull.target = getWorkDaysInMonth(now.getFullYear(), now.getMonth());
+            
+            // 月全勤进度
+            const monthFullPct = (data.achievements.monthFull.current / data.achievements.monthFull.target) * 100;
+            document.getElementById('monthFullProgress').style.width = monthFullPct + '%';
+            document.getElementById('monthFullProgress').className = 'steam-progress-bar ' + (monthFullPct === 100 ? 'green' : monthFullPct > 50 ? 'yellow' : 'gray');
+            document.getElementById('monthFullText').textContent = `${data.achievements.monthFull.current}/${data.achievements.monthFull.target}天`;
+            
+            // 周计划进度
+            const weekPlanPct = (data.achievements.weekPlan.current / data.achievements.weekPlan.target) * 100;
+            document.getElementById('weekPlanProgress').style.width = weekPlanPct + '%';
+            document.getElementById('weekPlanProgress').className = 'steam-progress-bar ' + (weekPlanPct === 100 ? 'green' : weekPlanPct > 50 ? 'yellow' : 'gray');
+            document.getElementById('weekPlanText').textContent = `${data.achievements.weekPlan.current}/${data.achievements.weekPlan.target}周`;
+            
+            // 创新任务进度
+            const innov1Pct = (data.achievements.innovation1.current / data.achievements.innovation1.target) * 100;
+            document.getElementById('innovationProgress1').style.width = innov1Pct + '%';
+            document.getElementById('innovationProgress1').className = 'steam-progress-bar ' + (innov1Pct === 100 ? 'green' : innov1Pct > 50 ? 'yellow' : 'gray');
+            document.getElementById('innovationText1').textContent = `${data.achievements.innovation1.current}/${data.achievements.innovation1.target}个挑战`;
+            
+            const innov2Pct = (data.achievements.innovation2.current / data.achievements.innovation2.target) * 100;
+            document.getElementById('innovationProgress2').style.width = innov2Pct + '%';
+            document.getElementById('innovationProgress2').className = 'steam-progress-bar ' + (innov2Pct === 100 ? 'green' : innov2Pct > 30 ? 'yellow' : 'gray');
+            document.getElementById('innovationText2').textContent = `${data.achievements.innovation2.current}/${data.achievements.innovation2.target}个挑战`;
+            
+            const innov3Pct = (data.achievements.innovation3.current / data.achievements.innovation3.target) * 100;
+            document.getElementById('innovationProgress3').style.width = innov3Pct + '%';
+            document.getElementById('innovationProgress3').className = 'steam-progress-bar ' + (innov3Pct === 100 ? 'green' : innov3Pct > 20 ? 'yellow' : 'gray');
+            document.getElementById('innovationText3').textContent = `${data.achievements.innovation3.current}/${data.achievements.innovation3.target}个挑战`;
+        }
+
+        function updateAchievementProgress(key, value) {
+            if (data.achievements[key]) {
+                data.achievements[key].current = value;
+                renderAchievements();
+            }
+        }
+
+        function exchangeItem(type, cost) {
+            if (points < cost) return alert('积分不足');
+            if (type === 'leave') {
+                leaveDays++;
+                document.getElementById('leaveDays').textContent = leaveDays;
+            }
+            points -= cost;
+            updatePoints();
+            alert('兑换成功！');
+        }
+
+        function updatePoints() {
+            document.getElementById('userPoints').textContent = '💰 ' + points;
+        }
+
+        // 补卡功能
+        function openMakeupModal() {
+            document.getElementById('makeupModal').classList.add('active');
+        }
+
+        function closeMakeupModal() {
+            document.getElementById('makeupModal').classList.remove('active');
+        }
+
+        function submitMakeup() {
+            const date = document.getElementById('makeupDate').value;
+            const reason = document.getElementById('makeupReason').value.trim();
+            if (!date || !reason) return alert('请填写完整信息');
+            alert('补卡申请已提交');
+            closeMakeupModal();
+        }
+
+        // 调休功能
+        function openLeaveModal() {
+            renderLeaveModalContent();
+            document.getElementById('leaveModal').classList.add('active');
+        }
+
+        function closeLeaveModal() {
+            document.getElementById('leaveModal').classList.remove('active');
+        }
+
+        function switchLeaveTab(tab) {
+            currentLeaveTab = tab;
+            document.querySelectorAll('#leaveModal .card-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('leaveTab' + tab.charAt(0).toUpperCase() + tab.slice(1))?.classList.add('active');
+            renderLeaveModalContent();
+        }
+
+        function renderLeaveModalContent() {
+            const container = document.getElementById('leaveModalContent');
+            if (!container) return;
+            
+            if (currentLeaveTab === 'use') {
+                container.innerHTML = `
+                    <div class="modal-row">
+                        <input type="date" id="leaveUseDate" placeholder="调休日期">
+                    </div>
+                    <div class="modal-row">
+                        <select id="leaveUseType" style="flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:14px;">
+                            <option value="half">半天（周三-周五）</option>
+                            <option value="full">全天</option>
+                        </select>
+                    </div>
+                    <button class="card-btn" onclick="submitLeaveUse()" style="width:100%;padding:12px;margin-top:8px;">提交申请</button>
+                `;
+            } else if (currentLeaveTab === 'add') {
+                container.innerHTML = `
+                    <div class="modal-row">
+                        <input type="date" id="leaveAddDate" placeholder="加班日期">
+                    </div>
+                    <div class="modal-row">
+                        <select id="leaveAddType" style="flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:14px;">
+                            <option value="weekend">周六日加班（+1天）</option>
+                            <option value="holiday">节假日加班（+1天）</option>
+                        </select>
+                    </div>
+                    <button class="card-btn" onclick="submitLeaveAdd()" style="width:100%;padding:12px;margin-top:8px;background:var(--success);color:white;">记录加班</button>
+                `;
+            } else if (currentLeaveTab === 'manage') {
+                container.innerHTML = `
+                    <div style="padding:16px;background:var(--bg);border-radius:12px;margin-bottom:16px;">
+                        <div style="font-size:14px;color:var(--text2);margin-bottom:8px;">当前调休天数</div>
+                        <div style="font-size:32px;font-weight:700;color:var(--accent);"><span id="manageLeaveDays">${leaveDays}</span><span style="font-size:14px;font-weight:400;color:var(--text2);margin-left:4px;">天</span></div>
+                    </div>
+                    <div class="modal-row">
+                        <select id="manageType" style="flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:14px;">
+                            <option value="add">增加调休</option>
+                            <option value="subtract">减少调休</option>
+                        </select>
+                        <input type="number" id="manageDays" placeholder="天数" min="0.5" step="0.5" style="flex:1;">
+                    </div>
+                    <div class="modal-row">
+                        <input type="text" id="manageReason" placeholder="备注说明（如：季度结算、加班补偿等）" style="flex:1;">
+                    </div>
+                    <button class="card-btn" onclick="submitManage()" style="width:100%;padding:12px;margin-top:8px;background:var(--accent);color:white;">确认调整</button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="leave-history">
+                        ${leaveHistory.length === 0 ? '<div style="color:var(--text2);text-align:center;padding:20px;">暂无记录</div>' : 
+                            leaveHistory.slice().reverse().map(h => `
+                                <div class="leave-history-item">
+                                    <span>${h.date} ${h.desc}</span>
+                                    <span style="display:flex;align-items:center;gap:8px;"><span style="font-size:11px;color:var(--text2);font-family:monospace;">${h.beforeDays}→${h.afterDays}</span><span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500;${h.type==='add'?'background:rgba(52,199,89,0.15);color:var(--success);':h.type==='use'?'background:rgba(255,59,48,0.15);color:var(--danger);':h.type==='manage'&&h.afterDays>h.beforeDays?'background:rgba(52,199,89,0.15);color:var(--success);':h.type==='manage'&&h.afterDays<h.beforeDays?'background:rgba(255,59,48,0.15);color:var(--danger);':'background:var(--bg);color:var(--text2);'}">${h.type==='add'?'获得调休':h.type==='use'?'使用调休':h.type==='manage'&&h.afterDays>h.beforeDays?'增加天数':h.type==='manage'&&h.afterDays<h.beforeDays?'减少天数':h.type==='reset'?'季度结算':'调整'}</span></span>
+                                </div>
+                            `).join('')}
+                    </div>
+                `;
+            }
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+        }
+
+        function submitLeaveUse() {
+            const date = document.getElementById('leaveUseDate')?.value;
+            const type = document.getElementById('leaveUseType')?.value;
+            if (!date) return alert('请选择日期');
+            const days = type === 'half' ? 0.5 : 1;
+            if (leaveDays < days) return alert('调休天数不足');
+            const beforeDays = leaveDays;
+            leaveDays -= days;
+            leaveHistory.push({ date: formatDate(date), type: 'use', days, desc: type === 'half' ? '调休半天' : '调休全天', beforeDays, afterDays: leaveDays });
+            updateLeaveDisplay();
+            renderLeaveModalContent();
+            alert('调休申请已记录');
+        }
+
+        function submitLeaveAdd() {
+            const date = document.getElementById('leaveAddDate')?.value;
+            if (!date) return alert('请选择日期');
+            const beforeDays = leaveDays;
+            leaveDays += 1;
+            leaveHistory.push({ date: formatDate(date), type: 'add', days: 1, desc: '加班记录', beforeDays, afterDays: leaveDays });
+            updateLeaveDisplay();
+            renderLeaveModalContent();
+            alert('加班记录已添加，调休+1天');
+        }
+
+        function submitManage() {
+            const type = document.getElementById('manageType')?.value;
+            const days = parseFloat(document.getElementById('manageDays')?.value);
+            const reason = document.getElementById('manageReason')?.value.trim() || '手动调整';
+            
+            if (!days || days <= 0) return alert('请输入天数');
+            
+            const beforeDays = leaveDays;
+            
+            if (type === 'subtract') {
+                if (days > leaveDays) return alert('减少天数不能超过当前调休天数');
+                leaveDays -= days;
+                leaveHistory.push({ 
+                    date: formatDate(new Date()), 
+                    type: 'manage', 
+                    days: days, 
+                    desc: reason,
+                    beforeDays,
+                    afterDays: leaveDays
+                });
+            } else {
+                leaveDays += days;
+                leaveHistory.push({ 
+                    date: formatDate(new Date()), 
+                    type: 'manage', 
+                    days: days, 
+                    desc: reason,
+                    beforeDays,
+                    afterDays: leaveDays
+                });
+            }
+            
+            updateLeaveDisplay();
+            renderLeaveModalContent();
+            alert('调休天数已调整');
+        }
+
+        function updateLeaveDisplay() {
+            document.getElementById('leaveDays').textContent = leaveDays;
+        }
+
+        // 季度清空检查
+        function checkQuarterReset() {
+            const now = new Date();
+            const month = now.getMonth();
+            const day = now.getDate();
+            if (day === 1 && [0, 3, 6, 9].includes(month)) {
+                const beforeDays = leaveDays;
+                leaveDays = 0;
+                leaveHistory.push({ date: formatDate(new Date()), type: 'reset', desc: '季度清空', beforeDays, afterDays: 0 });
+                alert('调休天数已季度清空');
+            }
+        }
+    </script>
+</body>
+</html>
